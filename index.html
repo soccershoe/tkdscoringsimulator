@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKD Scoring Simulator</title>
+    <title>Truescore Training Simulator</title>
     <style>
-        /* TKD Scoring Simulator color scheme */
+        /* Daedo Truescore inspired color scheme */
         :root {
             --blue-color: #00a0ff;
             --red-color: #ff2a2a;
@@ -736,7 +736,7 @@
 
             document.querySelectorAll('.btn-penalty').forEach(button => {
                 button.addEventListener('click', (event) => {
-                    const player = event.currentTarget.dataset.dataset.player;
+                    const player = event.currentTarget.dataset.player;
                     awardPenalty(player);
                 });
             });
