@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKD Scoring Simulator</title>
+    <style>
+        /* TKD Scoring Simulator color scheme */
+        :root {
+            --blue-color: #00a0ff;
+            --red-color: #ff2a2a;
+            --border-color: #333;
+            --bg-color: #101010;
+            --card-bg-color: #1e1e1e;
+            --text-color: #f5f5f5;
+            --white-color: #ffffff;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --primary-btn-color: #0d6efd;
+            --deduct-color: #6c757d; /* Grey for deduct button */
+            --timer-color: #f0e68c; /* Khaki/Yellow for timer */
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Center content vertically */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard syntax */
+        }
+        h1 {
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        /* --- Setup Wizard Styles --- */
+        #setup-wizard {
+            background: var(--card-bg-color);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+            flex: 1;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 0.5rem;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .number-input-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .adjust-btn {
+            width: 40px;
+            height: 48px; /* Match input height */
+            padding: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            line-height: 48px;
+            border: 1px solid var(--border-color);
+            background-color: #333;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .adjust-btn:first-of-type {
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+        .adjust-btn:last-of-type {
+            border-top-right-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+        .number-input-wrapper input[type="number"] {
+            border-radius: 0;
+            text-align: center;
+            width: 60px;
+            -moz-appearance: textfield; /* Hide Firefox spinner */
+        }
+        .number-input-wrapper input::-webkit-outer-spin-button,
+        .number-input-wrapper input::-webkit-inner-spin-button {
+            -webkit-appearance: none; /* Hide Chrome/Safari/Edge spinner */
+            margin: 0;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .checkbox-group input {
+            width: auto;
+        }
+        #start-match-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 0.5rem;
+            color: var(--white-color);
+            background-color: var(--primary-btn-color);
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        
+        /* --- Main Scoreboard Styles (hidden by default) --- */
+        .main-container {
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .match-info-display {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 1rem;
+            background-color: var(--card-bg-color);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            color: var(--text-color);
+        }
+        .scoreboard-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            gap: 1.5rem;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            background-color: var(--card-bg-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .player-section { flex: 1; padding: 1.5rem; text-align: center; }
+        .player-section.blue { border-right: 1px solid var(--border-color); }
+        .player-name { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: bold; padding: 0.75rem; border-radius: 0.5rem; color: var(--white-color); margin-bottom: 0.5rem; text-transform: uppercase; }
+        .blue .player-name { background-color: var(--blue-color); }
+        .red .player-name { background-color: var(--red-color); }
+        .round-wins {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 20px;
+            margin-bottom: 1rem;
+        }
+        .round-win-dot {
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--white-color);
+            border-radius: 3px;
+        }
+        .blue .round-win-dot { background-color: var(--blue-color); }
+        .red .round-win-dot { background-color: var(--red-color); }
+        .score { font-size: clamp(6rem, 20vw, 12rem); font-weight: 900; margin: 1.5rem 0; line-height: 1; font-variant-numeric: tabular-nums; }
+        .blue .score { color: var(--blue-color); }
+        .red .score { color: var(--red-color); }
+        .gamjeom-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 20px; /* Reserve space so layout doesn't jump */
+            margin-top: 1rem; /* Give space below the buttons */
+        }
+        .gamjeom-dot {
+            width: 16px;
+            height: 16px;
+            background-color: var(--red-color);
+            border-radius: 50%;
+            border: 1px solid var(--white-color);
+        }
+        .controls {
+             margin-top: 1rem;
+        }
+        .controls h3 { margin-bottom: 1rem; font-size: clamp(1.1rem, 2vw, 1.25rem); color: #ccc; }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .btn { padding: 1rem; font-size: clamp(1rem, 2.5vw, 1.2rem); font-weight: bold; border: none; border-radius: 0.5rem; color: var(--white-color); cursor: pointer; transition: transform 0.1s ease, box-shadow 0.1s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn:active { transform: scale(0.96); box-shadow: none; }
+        .btn-point { background-color: var(--success-color); }
+        .btn-deduct { background-color: var(--deduct-color); }
+        .btn-penalty { background-color: var(--warning-color); color: #101010; grid-column: 1 / -1; }
+        .master-controls { position: relative; padding: 1.5rem; width: 100%; text-align: center; background: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .round-display { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .timer-display { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: bold; margin-bottom: 1rem; font-variant-numeric: tabular-nums; color: var(--timer-color); }
+        .master-controls .btn { width: clamp(100px, 20vw, 140px); margin: 0.5rem; }
+        .btn-timer-start { background-color: var(--success-color); }
+        .btn-timer-stop { background-color: var(--warning-color); color: #101010;}
+        .btn-reset { background-color: var(--red-color); }
+        #next-round-btn { background-color: var(--primary-btn-color); }
+        #shortcuts-btn {
+            background-color: #495057;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            font-size: 1.5rem;
+            line-height: 40px;
+            z-index: 10;
+        }
+        
+        /* --- Modal & Winner Display Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background-color: var(--card-bg-color);
+            padding: 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .winner-display-box h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .winner-display-box p {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+        .shortcuts-modal-box {
+            text-align: left;
+            width: 90%;
+            max-width: 400px;
+        }
+        .shortcuts-modal-box h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .shortcuts-modal-box ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+        .shortcuts-modal-box li {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        .shortcuts-modal-box li strong {
+            display: inline-block;
+            width: 120px;
+            color: var(--timer-color);
+            font-size: 1.2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .scoreboard-container { flex-direction: column; }
+            .player-section.blue { border-right: none; border-bottom: 1px solid var(--border-color); }
+             h1 { font-size: 1.5rem; }
+             .form-row { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-wizard">
+        <h1>Match Setup</h1>
+        <div class="form-group">
+            <label for="blue-name">Blue Player (Chung)</label>
+            <input type="text" id="blue-name-input" value="CHUNG">
+        </div>
+        <div class="form-group">
+            <label for="red-name">Red Player (Hong)</label>
+            <input type="text" id="red-name-input" value="HONG">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="division-select">Division</label>
+                <select id="division-select">
+                    <option>Cadet</option>
+                    <option>Junior</option>
+                    <option selected>Senior</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="gender-select">Gender</label>
+                <select id="gender-select">
+                    <option>Male</option>
+                    <option>Female</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="age-input">Age</label>
+                <input type="number" id="age-input" min="1" placeholder="e.g., 25">
+            </div>
+            <div class="form-group">
+                <label for="weight-input">Weight Category</label>
+                <input type="text" id="weight-input" placeholder="e.g., -80kg">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="num-rounds-input">Best of (Rounds)</label>
+            <input type="number" id="num-rounds-input" value="3" min="1">
+        </div>
+        <div class="form-group">
+            <label>Round Duration (min/sec)</label>
+            <div class="time-inputs">
+                <div class="number-input-wrapper">
+                    <button type="button" class="adjust-btn" data-target="round-minutes-input" data-action="decrement">-</button>
+                    <input type="number" id="round-minutes-input" value="0" min="0" placeholder="Min">
+                    <button type="button" class="adjust-btn" data-target="round-minutes-input" data-action="increment">+</button>
+                </div>
+                <div class="number-input-wrapper">
+                    <button type="button" class="adjust-btn" data-target="round-seconds-input" data-action="decrement">-</button>
+                    <input type="number" id="round-seconds-input" value="5" min="0" max="59" placeholder="Sec">
+                    <button type="button" class="adjust-btn" data-target="round-seconds-input" data-action="increment">+</button>
+                </div>
+            </div>
+        </div>
+         <div class="form-group checkbox-group">
+            <input type="checkbox" id="golden-point-enabled" checked>
+            <label for="golden-point-enabled">Enable Golden Point for Match Tie-Breaker</label>
+        </div>
+        <button id="start-match-btn">Start Match</button>
+    </div>
+
+    <div id="main-container" class="main-container">
+        <div id="match-info-display" class="match-info-display"></div>
+        <div class="scoreboard-container">
+            <div class="player-section blue">
+                <div id="blue-player-name" class="player-name"></div>
+                <div id="blue-round-wins" class="round-wins"></div>
+                <div id="blue-score" class="score">0</div>
+                <div class="controls">
+                    <h3>Scoring</h3>
+                    <div class="btn-grid">
+                        <button class="btn btn-point" data-player="blue" data-points="1">+1 Pt</button>
+                        <button class="btn btn-deduct" data-player="blue" data-points="-1">-1 Pt</button>
+                        <button class="btn btn-penalty" data-player="blue">Gam-jeom</button>
+                    </div>
+                </div>
+                <div id="blue-gamjeoms" class="gamjeom-dots"></div>
+            </div>
+            <div class="player-section red">
+                <div id="red-player-name" class="player-name"></div>
+                <div id="red-round-wins" class="round-wins"></div>
+                <div id="red-score" class="score">0</div>
+                <div class="controls">
+                    <h3>Scoring</h3>
+                    <div class="btn-grid">
+                        <button class="btn btn-point" data-player="red" data-points="1">+1 Pt</button>
+                        <button class="btn btn-deduct" data-player="red" data-points="-1">-1 Pt</button>
+                        <button class="btn btn-penalty" data-player="red">Gam-jeom</button>
+                    </div>
+                </div>
+                <div id="red-gamjeoms" class="gamjeom-dots"></div>
+            </div>
+        </div>
+
+        <div class="master-controls">
+            <div id="round-display" class="round-display">Round 1 of 3</div>
+            <div id="timer" class="timer-display">2:00</div>
+            <div>
+                <button id="start-btn" class="btn btn-timer-start">Start Round</button>
+                <button id="stop-btn" class="btn btn-timer-stop">Stop</button>
+                <button id="next-round-btn" class="btn" style="display: none;">Next Round</button>
+                <button id="reset-btn" class="btn btn-reset">New Match</button>
+            </div>
+            <button id="shortcuts-btn" class="btn">?</button>
+        </div>
+    </div>
+
+    <div id="winner-display" class="modal-overlay" style="display: none;">
+        <div class="modal-box winner-display-box">
+            <h2 id="winner-text"></h2>
+            <p id="final-score-text"></p>
+            <button id="new-match-from-winner-btn" class="btn btn-primary">New Match</button>
+        </div>
+    </div>
+
+    <div id="shortcuts-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box shortcuts-modal-box">
+            <h2>Keyboard Shortcuts</h2>
+            <ul>
+                <li><strong>Enter</strong> Start Match / New Match</li>
+                <li><strong>Spacebar</strong> Start / Stop Timer</li>
+                <li><strong>B</strong> Gam-jeom to Blue</li>
+                <li><strong>R</strong> Gam-jeom to Red</li>
+                <li><strong>Esc</strong> Close this window</li>
+            </ul>
+            <button id="close-shortcuts-btn" class="btn btn-primary">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DOM ELEMENT REFERENCES ---
+            const setupWizardEl = document.getElementById('setup-wizard');
+            const mainContainerEl = document.getElementById('main-container');
+            const blueScoreEl = document.getElementById('blue-score');
+            const redScoreEl = document.getElementById('red-score');
+            const timerEl = document.getElementById('timer');
+            const roundDisplayEl = document.getElementById('round-display');
+            const matchInfoDisplayEl = document.getElementById('match-info-display');
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const nextRoundBtn = document.getElementById('next-round-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const startMatchBtn = document.getElementById('start-match-btn');
+            
+            const winnerDisplayEl = document.getElementById('winner-display');
+            const winnerTextEl = document.getElementById('winner-text');
+            const finalScoreTextEl = document.getElementById('final-score-text');
+            const newMatchFromWinnerBtn = document.getElementById('new-match-from-winner-btn');
+
+            const shortcutsBtn = document.getElementById('shortcuts-btn');
+            const shortcutsModalEl = document.getElementById('shortcuts-modal');
+            const closeShortcutsBtn = document.getElementById('close-shortcuts-btn');
+
+
+            // --- STATE MANAGEMENT ---
+            let matchState = {
+                scores: { blue: 0, red: 0 },
+                gamjeoms: { blue: 0, red: 0 },
+                roundWins: { blue: 0, red: 0 }
+            };
+            let matchSettings = {};
+            let timerInterval = null;
+            let timeRemaining = 0;
+
+            function startMatch() {
+                // 1. Gather settings from wizard
+                const blueName = document.getElementById('blue-name-input').value || 'CHUNG';
+                const redName = document.getElementById('red-name-input').value || 'HONG';
+                const division = document.getElementById('division-select').value;
+                const gender = document.getElementById('gender-select').value;
+                const age = document.getElementById('age-input').value;
+                const weight = document.getElementById('weight-input').value;
+                const numRounds = parseInt(document.getElementById('num-rounds-input').value) || 1;
+                const minutes = parseInt(document.getElementById('round-minutes-input').value) || 0;
+                const seconds = parseInt(document.getElementById('round-seconds-input').value) || 0;
+                const goldenPointEnabled = document.getElementById('golden-point-enabled').checked;
+                
+                matchSettings = {
+                    blueName,
+                    redName,
+                    division,
+                    gender,
+                    age,
+                    weight,
+                    numRounds,
+                    roundDuration: (minutes * 60) + seconds,
+                    currentRound: 1,
+                    goldenPointEnabled,
+                    isGoldenPoint: false,
+                    winsNeeded: Math.ceil(numRounds / 2)
+                };
+                
+                // 2. Configure the scoreboard UI
+                document.getElementById('blue-player-name').textContent = matchSettings.blueName;
+                document.getElementById('red-player-name').textContent = matchSettings.redName;
+                matchInfoDisplayEl.textContent = `${matchSettings.division} | ${matchSettings.gender} | Age: ${matchSettings.age || 'N/A'} | ${matchSettings.weight || 'N/A'}`;
+                resetMatchState();
+                prepareRound(1);
+                
+                // 3. Swap visibility
+                setupWizardEl.style.display = 'none';
+                mainContainerEl.style.display = 'flex';
+            }
+            
+            function prepareRound(roundNumber) {
+                resetRoundState();
+                matchSettings.currentRound = roundNumber;
+                matchSettings.isGoldenPoint = false;
+                roundDisplayEl.textContent = `Round ${matchSettings.currentRound}`;
+                timeRemaining = matchSettings.roundDuration;
+                updateTimerDisplay();
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'inline-block';
+                nextRoundBtn.style.display = 'none';
+            }
+            
+            function handleEndOfRound() {
+                stopTimer();
+
+                // Determine round winner
+                if (matchState.scores.blue > matchState.scores.red) {
+                    matchState.roundWins.blue++;
+                } else if (matchState.scores.red > matchState.scores.blue) {
+                    matchState.roundWins.red++;
+                }
+                // If scores are tied, no round win is awarded. The match tie-breaker will handle it.
+
+                renderRoundWins();
+                
+                // Check if the match should end or proceed
+                const blueWins = matchState.roundWins.blue;
+                const redWins = matchState.roundWins.red;
+                const winsNeeded = matchSettings.winsNeeded;
+                const isLastRound = matchSettings.currentRound >= matchSettings.numRounds;
+
+                if (blueWins >= winsNeeded || redWins >= winsNeeded || isLastRound) {
+                    endMatch();
+                } else {
+                    // Proceed to next round
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'none';
+                    nextRoundBtn.style.display = 'inline-block';
+                }
+            }
+            
+            function prepareGoldenPointRound() {
+                resetRoundState(); // Reset scores for GP
+                matchSettings.isGoldenPoint = true;
+                roundDisplayEl.textContent = 'GOLDEN POINT';
+                timeRemaining = 60; // 1 minute for golden point round
+                updateTimerDisplay();
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'inline-block';
+                nextRoundBtn.style.display = 'none';
+            }
+
+            function updateScore(player, points) {
+                matchState.scores[player] += points;
+                if (matchState.scores[player] < 0) matchState.scores[player] = 0;
+                document.getElementById(`${player}-score`).textContent = matchState.scores[player];
+
+                if (matchSettings.isGoldenPoint && points > 0) {
+                    // This score wins the match
+                    matchState.roundWins[player]++;
+                    renderRoundWins();
+                    endMatch(); 
+                }
+            }
+
+            function awardPenalty(player) {
+                const opponent = player === 'blue' ? 'red' : 'blue';
+                // A penalty awards a point, which can end a golden point round
+                updateScore(opponent, 1); 
+
+                matchState.gamjeoms[player]++; 
+                renderGamjeomDots(player);
+            }
+            
+            function renderRoundWins() {
+                const blueContainer = document.getElementById('blue-round-wins');
+                const redContainer = document.getElementById('red-round-wins');
+                blueContainer.innerHTML = '';
+                redContainer.innerHTML = '';
+
+                for(let i=0; i<matchState.roundWins.blue; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'round-win-dot';
+                    blueContainer.appendChild(dot);
+                }
+                for(let i=0; i<matchState.roundWins.red; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'round-win-dot';
+                    redContainer.appendChild(dot);
+                }
+            }
+
+            function renderGamjeomDots(player) {
+                const container = document.getElementById(`${player}-gamjeoms`);
+                container.innerHTML = '';
+                for (let i = 0; i < matchState.gamjeoms[player]; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'gamjeom-dot';
+                    container.appendChild(dot);
+                }
+            }
+
+            function startTimer() {
+                if (timerInterval || timeRemaining === 0) return;
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining <= 0) {
+                        handleEndOfRound();
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            function endMatch() {
+                stopTimer();
+
+                const isFinalRoundOver = matchSettings.currentRound >= matchSettings.numRounds;
+                const isTied = matchState.roundWins.blue === matchState.roundWins.red;
+
+                if (isFinalRoundOver && isTied && matchSettings.goldenPointEnabled && !matchSettings.isGoldenPoint) {
+                    prepareGoldenPointRound();
+                    return; // Don't declare winner yet, go to Golden Point
+                }
+                
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'none';
+                nextRoundBtn.style.display = 'none';
+
+                let winnerMessage = '';
+                if (matchState.roundWins.blue > matchState.roundWins.red) {
+                    winnerMessage = `${matchSettings.blueName} WINS!`;
+                    winnerTextEl.style.color = 'var(--blue-color)';
+                } else if (matchState.roundWins.red > matchState.roundWins.blue) {
+                    winnerMessage = `${matchSettings.redName} WINS!`;
+                    winnerTextEl.style.color = 'var(--red-color)';
+                } else {
+                    winnerMessage = "IT'S A DRAW!";
+                    winnerTextEl.style.color = 'var(--text-color)';
+                }
+
+                winnerTextEl.textContent = winnerMessage;
+                finalScoreTextEl.textContent = `Final Rounds: ${matchState.roundWins.blue} - ${matchState.roundWins.red}`;
+                winnerDisplayEl.style.display = 'flex';
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            function resetRoundState() {
+                 matchState.scores.blue = 0;
+                 matchState.scores.red = 0;
+                 matchState.gamjeoms.blue = 0;
+                 matchState.gamjeoms.red = 0;
+                 blueScoreEl.textContent = '0';
+                 redScoreEl.textContent = '0';
+                 renderGamjeomDots('blue');
+                 renderGamjeomDots('red');
+            }
+
+            function resetMatchState() {
+                resetRoundState();
+                matchState.roundWins.blue = 0;
+                matchState.roundWins.red = 0;
+                renderRoundWins();
+            }
+
+            function returnToSetup() {
+                stopTimer();
+                mainContainerEl.style.display = 'none';
+                setupWizardEl.style.display = 'block';
+                winnerDisplayEl.style.display = 'none';
+            }
+
+            function showShortcuts() {
+                shortcutsModalEl.style.display = 'flex';
+            }
+
+            function hideShortcuts() {
+                shortcutsModalEl.style.display = 'none';
+            }
+
+            // --- EVENT LISTENERS ---
+            startMatchBtn.addEventListener('click', startMatch);
+            startBtn.addEventListener('click', startTimer);
+            stopBtn.addEventListener('click', stopTimer);
+            nextRoundBtn.addEventListener('click', () => prepareRound(matchSettings.currentRound + 1));
+            resetBtn.addEventListener('click', returnToSetup);
+            newMatchFromWinnerBtn.addEventListener('click', returnToSetup);
+            shortcutsBtn.addEventListener('click', showShortcuts);
+            closeShortcutsBtn.addEventListener('click', hideShortcuts);
+            shortcutsModalEl.addEventListener('click', (event) => {
+                if (event.target === shortcutsModalEl) {
+                    hideShortcuts();
+                }
+            });
+
+
+            document.querySelectorAll('[data-points]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const player = event.currentTarget.dataset.player;
+                    const points = parseInt(event.currentTarget.dataset.points, 10);
+                    updateScore(player, points);
+                });
+            });
+
+            document.querySelectorAll('.btn-penalty').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const player = event.currentTarget.dataset.dataset.player;
+                    awardPenalty(player);
+                });
+            });
+            
+            document.querySelectorAll('.adjust-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const targetInput = document.getElementById(event.currentTarget.dataset.target);
+                    const action = event.currentTarget.dataset.action;
+                    let value = parseInt(targetInput.value) || 0;
+                    const min = parseInt(targetInput.min);
+                    const max = parseInt(targetInput.max);
+
+                    if (action === 'increment') {
+                        if (isNaN(max) || value < max) {
+                            value++;
+                        }
+                    } else if (action === 'decrement') {
+                        if (isNaN(min) || value > min) {
+                            value--;
+                        }
+                    }
+                    targetInput.value = value;
+                });
+            });
+
+            // --- KEYBOARD SHORTCUTS ---
+            document.addEventListener('keydown', function(event) {
+                const isShortcutsVisible = shortcutsModalEl.style.display !== 'none';
+                if (isShortcutsVisible) {
+                    if (event.key === 'Escape') {
+                        hideShortcuts();
+                    }
+                    return; // Stop processing other keys if shortcuts modal is open
+                }
+
+                // Ignore shortcuts if user is typing in an input field
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT') {
+                    return;
+                }
+
+                const isSetupVisible = setupWizardEl.style.display !== 'none';
+                const isWinnerVisible = winnerDisplayEl.style.display !== 'none';
+                
+                if (isSetupVisible) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        startMatch();
+                    }
+                } else if (isWinnerVisible) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        returnToSetup();
+                    }
+                } else { // Match is active
+                    switch (event.key.toLowerCase()) {
+                        case ' ':
+                            event.preventDefault();
+                            if (timerInterval) {
+                                stopTimer();
+                            } else {
+                                startTimer();
+                            }
+                            break;
+                        case 'b':
+                            awardPenalty('blue');
+                            break;
+                        case 'r':
+                            awardPenalty('red');
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
